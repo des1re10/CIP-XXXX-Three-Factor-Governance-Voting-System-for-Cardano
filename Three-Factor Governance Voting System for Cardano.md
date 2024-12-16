@@ -85,7 +85,7 @@ def calculate_effective_holding_time(wallet):
 ```
 
 ### Option B: Relative Time Calculation
-The relative time approach compares a wallet's effective holding time to the network average:
+The relative time approach compares a wallet's holding time to the network average, with a maximum cap of 2.0 (200%) on the time multiplier:
 
 ```python
 def calculate_relative_holding_time(wallet):
@@ -98,32 +98,51 @@ def calculate_relative_holding_time(wallet):
     # Get network average holding time
     network_avg_time = get_network_avg_holding_time()
     
-    # Calculate relative position with 2.0 cap
+    # Calculate relative position and cap at 200% (2.0)
     relative_position = wallet_weighted_time / network_avg_time
-    return min(relative_position, 2.0)
+    return min(relative_position, 2.0)  # Maximum 200% multiplier
 ```
 
-#### Multiplier Cap Explanation
-The maximum multiplier of 2.0 means that a wallet can receive at most double the voting power from the time factor compared to a wallet with average holding time. This creates an upper bound on the influence of very old wallets while still rewarding long-term holders.
+#### Time Multiplier Cap (200%) Explanation
+The time multiplier uses a maximum cap of 2.0 (200%) to ensure fair voting power distribution:
 
-Example calculation with a network average holding time of 100 days:
+1. Base Case (100%):
+   - A wallet held for the network average time receives a 1.0 multiplier (100%)
+   - Example: If network average is 100 days, a 100-day wallet gets 1.0
+
+2. Maximum Boost (200%):
+   - Long-term holders can earn up to a 2.0 multiplier (200%)
+   - This means their ADA-based voting power can at most double
+   - Any holding time beyond 2x the network average is capped
+
+3. Proportional Reduction:
+   - Newer wallets receive a proportionally reduced multiplier
+   - Example: A wallet held for half the network average gets 0.5 multiplier (50%)
+
+Example calculations with 100-day network average:
 ```
-Wallet A (100 days) = network average:
-- relative_position = 100/100 = 1.0
-- time_multiplier = min(1.0, 2.0) = 1.0
+Wallet A (100 days = network average):
+- relative_position = 100/100 = 1.0 (100%)
+- time_multiplier = min(1.0, 2.0) = 1.0 (normal voting power)
 
-Wallet B (200 days) = 2x average:
-- relative_position = 200/100 = 2.0
-- time_multiplier = min(2.0, 2.0) = 2.0
+Wallet B (200 days = 2x average):
+- relative_position = 200/100 = 2.0 (200%)
+- time_multiplier = min(2.0, 2.0) = 2.0 (maximum doubled power)
 
-Wallet C (300 days) = 3x average:
-- relative_position = 300/100 = 3.0
-- time_multiplier = min(3.0, 2.0) = 2.0 (capped)
+Wallet C (300 days = 3x average):
+- relative_position = 300/100 = 3.0 (300%)
+- time_multiplier = min(3.0, 2.0) = 2.0 (capped at maximum)
 
-Wallet D (50 days) = 0.5x average:
-- relative_position = 50/100 = 0.5
-- time_multiplier = min(0.5, 2.0) = 0.5
+Wallet D (50 days = 0.5x average):
+- relative_position = 50/100 = 0.5 (50%)
+- time_multiplier = min(0.5, 2.0) = 0.5 (reduced power)
 ```
+
+This 200% cap was chosen because:
+1. It provides meaningful incentive for long-term holding
+2. Prevents excessive concentration of power in very old wallets
+3. Creates clear upper bounds on time-based voting power
+4. Maintains balanced influence across the network
 
 This cap value of 2.0 is an adjustable parameter that can be modified through governance voting based on community feedback and network dynamics.
 
