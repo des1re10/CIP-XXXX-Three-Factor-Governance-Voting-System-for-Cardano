@@ -55,10 +55,10 @@ The base can be adjusted through governance voting when:
 - The community desires an adjustment to the weighting curve
 
 ### 3. Holding Time Weighting as Multiplier (25%)
-The holding time factor serves as a crucial component in preventing manipulation and rewarding long-term engagement in the ecosystem. It acts as a multiplier for the total voting power, ensuring that:
-- Long-term holders receive proportionally more voting power
-- New wallets must demonstrate commitment before gaining full voting power
-- The system naturally resists short-term manipulation attempts
+The holding time factor serves as a crucial component in preventing manipulation and rewarding long-term engagement in the ecosystem. It acts as a multiplier specifically for the ADA holdings-based voting power, ensuring that:
+- Long-term holders receive proportionally more influence over their ADA-based voting power
+- New wallets retain basic participation rights while having reduced ADA-based influence
+- The system naturally resists short-term manipulation attempts while remaining fair to legitimate transfers
 
 The holding time is calculated using the complete transaction history of each wallet:
 - Each transaction timestamp marks the start/end of a balance period
@@ -173,11 +173,11 @@ def calculate_voting_power(wallet):
                 math.log10(1000000)) * 0.35
     
     # Holding time weighting (25%)
-    # Used as multiplication factor for total result
+    # Used as multiplication factor only for ADA-based voting power
     time_multiplier = calculate_time_multiplier(stats.effective_holding_days)
     
-    # New wallets (holding_time near 0) result in very low total weighting
-    total_power = (base_power + ada_power) * time_multiplier
+    # Base power remains constant, time multiplier only affects ADA power
+    total_power = base_power + (ada_power * time_multiplier)
     
     return total_power
 
@@ -251,7 +251,8 @@ def calculate_wallet_stats(wallet_address):
 ### Attack Prevention
 1. Wallet Splitting Protection
 - Base voting weight requires minimum qualifying balance
-- Holding time starts fresh for transferred amounts
+- Holding time multiplier only affects ADA-based voting power
+- Even split wallets retain only base voting rights initially
 - Cost of attack exceeds potential benefits
 
 2. Flash Loan Protection
