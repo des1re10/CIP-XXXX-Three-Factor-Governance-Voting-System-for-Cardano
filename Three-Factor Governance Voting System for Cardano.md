@@ -28,13 +28,13 @@ This leads to:
 
 This proposal introduces a balanced governance approach combining three weighted factors: a base voting weight providing democratic participation rights, a logarithmic ADA holdings factor ensuring stake-based influence while preventing dominance, and a holding time multiplier primarily serving as an anti-manipulation mechanism against wallet splitting by large entities. Together, these factors create a system that is both more equitable and resistant to common attack vectors in token-based governance.
 
-### 1. Base Voting Weight per Wallet (40%)
+### 1. Base Voting Weight per Wallet (30%)
 - Democratic basic participation
 - Strengthens small holders and active community members
 - Ensures minimum voting weight independent of ADA holdings
 - Requires minimum qualifying balance to prevent abuse
 
-### 2. ADA Holdings Weighting (35%)
+### 2. ADA Holdings Weighting (45%)
 - Logarithmic instead of linear scaling
 - Formula: Voting weight = log10(ada_amount + 1) / log10(1M)
 - Reduces the influence of very large holdings
@@ -128,7 +128,7 @@ Wallet D (50 days) = 0.5x average:
 This cap value of 2.0 is an adjustable parameter that can be modified through governance voting based on community feedback and network dynamics.
 
 ## Parameter Adjustability
-The proposed weighting distribution (40% base, 35% ADA holdings, 25% holding time) represents an initial configuration designed to balance democratic participation with stake-based influence. However, these parameters can be adjusted through governance voting to better serve the community's needs:
+The proposed weighting distribution (30% base, 45% ADA holdings, 25% holding time) represents an initial configuration designed to balance democratic participation with stake-based influence. However, these parameters can be adjusted through governance voting to better serve the community's needs:
 
 ### Adjustable Parameters
 - Base voting weight percentage (currently 40%)
@@ -165,12 +165,12 @@ def calculate_voting_power(wallet):
     if stats.current_balance < MIN_VOTING_BALANCE:
         return 0
         
-    # Base voting weight (40%)
-    base_power = 1.0 * 0.4
+    # Base voting weight (30%)
+    base_power = 1.0 * 0.3
     
-    # ADA weighting (35%) - logarithmic
+    # ADA weighting (45%) - logarithmic
     ada_power = (math.log10(stats.current_balance + 1) / 
-                math.log10(1000000)) * 0.35
+                math.log10(1000000)) * 0.45
     
     # Holding time weighting (25%)
     # Used as multiplication factor only for ADA-based voting power
