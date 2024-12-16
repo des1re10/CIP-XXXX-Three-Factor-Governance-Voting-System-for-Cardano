@@ -150,8 +150,8 @@ This cap value of 2.0 is an adjustable parameter that can be modified through go
 The proposed weighting distribution (30% base, 45% ADA holdings, 25% holding time) represents an initial configuration designed to balance democratic participation with stake-based influence. However, these parameters can be adjusted through governance voting to better serve the community's needs:
 
 ### Adjustable Parameters
-- Base voting weight percentage (currently 40%)
-- ADA holdings weight percentage (currently 35%)
+- Base voting weight percentage (currently 30%)
+- ADA holdings weight percentage (currently 45%)
 - Holding time weight percentage (currently 25%)
 - Logarithmic base for ADA calculation (currently 1M ADA)
 - Minimum qualifying balance for voting
