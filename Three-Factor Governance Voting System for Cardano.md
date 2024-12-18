@@ -29,10 +29,50 @@ This leads to:
 This proposal introduces a balanced governance approach combining three weighted factors: a base voting weight providing democratic participation rights, a logarithmic ADA holdings factor ensuring stake-based influence while preventing dominance, and a holding time multiplier primarily serving as an anti-manipulation mechanism against wallet splitting by large entities. Together, these factors create a system that is both more equitable and resistant to common attack vectors in token-based governance.
 
 ### 1. Base Voting Weight per Wallet (30%)
-- Democratic basic participation
-- Strengthens small holders and active community members
-- Ensures minimum voting weight independent of ADA holdings
-- Requires minimum qualifying balance to prevent abuse
+The base voting weight component provides democratic basic participation rights while implementing necessary safeguards against potential abuse:
+
+#### Minimum Qualifying Requirements
+1. Balance Threshold
+   - Minimum balance: 500 ADA
+   - Can include both liquid ADA and delegated ADA in stake pools
+   - Balance must be maintained throughout the voting period
+
+2. Holding Duration
+   - Minimum holding period: 30 days
+   - Calculated using weighted average holding time
+   - Resets for newly received ADA
+
+3. Qualifying Balance Calculation
+   ```
+   Qualifying Balance = Liquid ADA + Delegated ADA (in stake pools)
+   ```
+
+#### Rationale for Minimum Requirements
+1. Security Considerations
+   - Prevents sybil attacks through wallet splitting
+   - Makes manipulation through multiple wallets economically unfeasible
+   - Ensures committed participation in the ecosystem
+
+2. Accessibility Balance
+   - 500 ADA threshold (~$300 USD at current prices) remains accessible to individual participants
+   - Including delegated ADA allows stakers to participate without unstaking
+   - 30-day holding period prevents short-term manipulation while allowing reasonable entry
+
+3. Technical Factors
+   - Accounts for UTXO minimum requirements
+   - Provides sufficient balance for transaction fees across multiple votes
+   - Compatible with existing stake delegation mechanics
+
+4. Economic Design
+   - Cost of attack (creating multiple qualifying wallets) exceeds potential benefits
+   - Encourages long-term holding and stake delegation
+   - Maintains broad participation while ensuring skin in the game
+
+#### Implementation Notes
+- Balance checking occurs at vote registration and submission
+- Holding period calculated using transaction history
+- Stake delegation status verified through on-chain data
+- Automatic disqualification if balance drops below minimum during voting
 
 ### 2. ADA Holdings Weighting (45%)
 - Logarithmic instead of linear scaling
@@ -154,7 +194,7 @@ The proposed weighting distribution (30% base, 45% ADA holdings, 25% holding tim
 - ADA holdings weight percentage (currently 45%)
 - Holding time weight percentage (currently 25%)
 - Logarithmic base for ADA calculation (currently 1M ADA)
-- Minimum qualifying balance for voting
+- Minimum qualifying balance (currently 500 ADA)
 - Time-related parameters (depending on chosen implementation):
   * For Fixed Period Option: Time period length (currently 2 years)
   * For Relative Time Option: Maximum multiplier cap (currently 2.0)
@@ -258,6 +298,33 @@ def calculate_wallet_stats(wallet_address):
         'effective_holding_days': total_weighted_time / total_weights,
         'current_balance': current_balance
     }
+
+def check_minimum_qualifying_balance(wallet_balance):
+    """
+    Check if wallet meets minimum balance requirement for base voting weight.
+    
+    Minimum Balance Requirements:
+    - Primary: 500 ADA minimum balance
+    - Additional: Must be held for at least 30 days
+    - Exception: Delegated ADA in stake pools counts towards minimum
+    
+    Returns:
+    - Boolean indicating if wallet qualifies for base voting weight
+    """
+    MIN_ADA_REQUIREMENT = 500  # 500 ADA minimum
+    MIN_HOLDING_DAYS = 30      # 30 days minimum holding period
+    
+    # Get effective balance including delegated ADA
+    total_effective_balance = wallet_balance.liquid_ada + wallet_balance.delegated_ada
+    
+    # Get holding duration
+    holding_duration = calculate_effective_holding_time(wallet_balance)
+    
+    # Check both requirements
+    meets_balance = total_effective_balance >= MIN_ADA_REQUIREMENT
+    meets_duration = holding_duration >= MIN_HOLDING_DAYS
+    
+    return meets_balance and meets_duration
 ```
 
 ## Security Considerations
@@ -269,7 +336,7 @@ def calculate_wallet_stats(wallet_address):
 
 ### Attack Prevention
 1. Wallet Splitting Protection
-- Base voting weight requires minimum qualifying balance
+- Base voting weight requires minimum qualifying balance (500 ADA)
 - Holding time multiplier only affects ADA-based voting power
 - Even split wallets retain only base voting rights initially
 - Cost of attack exceeds potential benefits
