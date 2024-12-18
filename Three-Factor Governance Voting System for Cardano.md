@@ -25,13 +25,71 @@ This leads to:
 - Underrepresentation of the broader community
 
 ## Proposed Solution: Three-Factor System
-
 This proposal introduces a balanced governance approach combining three weighted factors: a base voting weight providing democratic participation rights, a logarithmic ADA holdings factor ensuring stake-based influence while preventing dominance, and a holding time multiplier primarily serving as an anti-manipulation mechanism against wallet splitting by large entities. Together, these factors create a system that is both more equitable and resistant to common attack vectors in token-based governance.
 
-### 1. Base Voting Weight per Wallet (30%)
+### Overview of Voting Power Calculation
+
+The total voting power of a wallet is calculated using the following formula:
+
+```
+Total Voting Power = Base Weight (30%) + [ADA Holdings Weight (45%) × Time Multiplier (25%)]
+```
+
+Each factor serves a specific purpose in the governance system:
+
+1. Base Weight (30%):
+   - Provides equal basic voting rights to all qualifying wallets
+   - Requires minimum balance of 500 ADA and 30-day holding period
+   - Ensures broad community participation
+
+2. ADA Holdings Weight (45%):
+   - Uses logarithmic scaling to balance influence of large holders
+   - Calculated as: log10(ada_amount + 1) / log10(1M)
+   - Preserves stake-based voting while preventing dominance
+
+3. Time Multiplier (25%):
+   - Rewards long-term holders with increased influence
+   - Acts as multiplier only on the ADA holdings component
+   - Helps prevent manipulation through wallet splitting
+
+This combination creates a balanced system where:
+- Small holders maintain meaningful participation through base weight
+- Large holders retain influence but with diminishing returns
+- Long-term holders gain additional weight proportional to their commitment
+- Short-term traders and split wallets have reduced impact
+
+### Parameter Adjustability
+The proposed weighting distribution (30% base, 45% ADA holdings, 25% holding time) represents an initial configuration designed to balance democratic participation with stake-based influence. However, these parameters can be adjusted through governance voting to better serve the community's needs:
+
+#### Adjustable Parameters
+- Base voting weight percentage (currently 30%)
+- ADA holdings weight percentage (currently 45%)
+- Holding time weight percentage (currently 25%)
+- Logarithmic base for ADA calculation (currently 1M ADA)
+- Minimum qualifying balance (currently 500 ADA)
+- Time-related parameters (depending on chosen implementation):
+  * For Fixed Period Option: Time period length (currently 2 years)
+  * For Relative Time Option: Maximum multiplier cap (currently 2.0)
+
+#### Adjustment Process
+1. Parameters can be modified through governance voting
+2. Changes require a qualified majority (exact threshold to be determined by community)
+3. Implementation through parameter updates, not requiring hard forks
+4. Regular review periods (e.g., yearly) to assess parameter effectiveness
+
+#### Considerations for Adjustments
+- Changes should maintain a balance between small and large holders
+- Total of all weight percentages must equal 100%
+- Parameters should be adjusted based on empirical network data
+- Community feedback and participation metrics should guide changes
+- Impact analysis required before major parameter updates
+
+### Detailed Factor Descriptions
+
+#### 1. Base Voting Weight per Wallet (30%)
 The base voting weight component provides democratic basic participation rights while implementing necessary safeguards against potential abuse:
 
-#### Minimum Qualifying Requirements
+##### Minimum Qualifying Requirements
 1. Balance Threshold
    - Minimum balance: 500 ADA
    - Can include both liquid ADA and delegated ADA in stake pools
@@ -47,7 +105,7 @@ The base voting weight component provides democratic basic participation rights 
    Qualifying Balance = Liquid ADA + Delegated ADA (in stake pools)
    ```
 
-#### Rationale for Minimum Requirements
+##### Rationale for Minimum Requirements
 1. Security Considerations
    - Prevents sybil attacks through wallet splitting
    - Makes manipulation through multiple wallets economically unfeasible
@@ -68,13 +126,13 @@ The base voting weight component provides democratic basic participation rights 
    - Encourages long-term holding and stake delegation
    - Maintains broad participation while ensuring skin in the game
 
-#### Implementation Notes
+##### Implementation Notes
 - Balance checking occurs at vote registration and submission
 - Holding period calculated using transaction history
 - Stake delegation status verified through on-chain data
 - Automatic disqualification if balance drops below minimum during voting
 
-### 2. ADA Holdings Weighting (45%)
+#### 2. ADA Holdings Weighting (45%)
 - Logarithmic instead of linear scaling
 - Formula: Voting weight = log10(ada_amount + 1) / log10(1M)
 - Reduces the influence of very large holdings
@@ -94,7 +152,7 @@ The base can be adjusted through governance voting when:
 - The distribution of ADA holdings shifts substantially
 - The community desires an adjustment to the weighting curve
 
-### 3. Holding Time Weighting as Multiplier (25%)
+#### 3. Holding Time Weighting as Multiplier (25%)
 The holding time factor serves as a crucial component in preventing manipulation and rewarding long-term engagement in the ecosystem. It acts as a multiplier specifically for the ADA holdings-based voting power, ensuring that:
 - Long-term holders receive proportionally more influence over their ADA-based voting power
 - New wallets retain basic participation rights while having reduced ADA-based influence
@@ -106,9 +164,9 @@ The holding time is calculated using the complete transaction history of each wa
 - Only continuously held balances contribute to the holding time calculation
 - Transfers between wallets start fresh holding time calculations for the transferred amount
 
-## Implementation Options for Holding Time Factor
+### Implementation Options for Holding Time Factor
 
-### Option A: Fixed Time Period (2 years)
+#### Option A: Fixed Time Period (2 years)
 The fixed time period approach uses transaction history to calculate an effective holding time up to a maximum of 2 years:
 
 ```python
@@ -124,7 +182,7 @@ def calculate_effective_holding_time(wallet):
     return min(weighted_time, max_holding_time)
 ```
 
-### Option B: Relative Time Calculation
+#### Option B: Relative Time Calculation
 The relative time approach compares a wallet's holding time to the network average, with a maximum cap of 2.0 (200%) on the time multiplier:
 
 ```python
@@ -143,7 +201,7 @@ def calculate_relative_holding_time(wallet):
     return min(relative_position, 2.0)  # Maximum 200% multiplier
 ```
 
-#### Time Multiplier Cap (200%) Explanation
+##### Time Multiplier Cap (200%) Explanation
 The time multiplier uses a maximum cap of 2.0 (200%) to ensure fair voting power distribution:
 
 1. Base Case (100%):
@@ -186,35 +244,9 @@ This 200% cap was chosen because:
 
 This cap value of 2.0 is an adjustable parameter that can be modified through governance voting based on community feedback and network dynamics.
 
-## Parameter Adjustability
-The proposed weighting distribution (30% base, 45% ADA holdings, 25% holding time) represents an initial configuration designed to balance democratic participation with stake-based influence. However, these parameters can be adjusted through governance voting to better serve the community's needs:
+### Technical Implementation
 
-### Adjustable Parameters
-- Base voting weight percentage (currently 30%)
-- ADA holdings weight percentage (currently 45%)
-- Holding time weight percentage (currently 25%)
-- Logarithmic base for ADA calculation (currently 1M ADA)
-- Minimum qualifying balance (currently 500 ADA)
-- Time-related parameters (depending on chosen implementation):
-  * For Fixed Period Option: Time period length (currently 2 years)
-  * For Relative Time Option: Maximum multiplier cap (currently 2.0)
-
-### Adjustment Process
-1. Parameters can be modified through governance voting
-2. Changes require a qualified majority (exact threshold to be determined by community)
-3. Implementation through parameter updates, not requiring hard forks
-4. Regular review periods (e.g., yearly) to assess parameter effectiveness
-
-### Considerations for Adjustments
-- Changes should maintain a balance between small and large holders
-- Total of all weight percentages must equal 100%
-- Parameters should be adjusted based on empirical network data
-- Community feedback and participation metrics should guide changes
-- Impact analysis required before major parameter updates
-
-## Technical Implementation
-
-### Core Voting Power Calculation
+#### Core Voting Power Calculation
 ```python
 def calculate_voting_power(wallet):
     # Get wallet stats from transaction history
@@ -327,14 +359,14 @@ def check_minimum_qualifying_balance(wallet_balance):
     return meets_balance and meets_duration
 ```
 
-## Security Considerations
+### Security Considerations
 
-### Transaction History Integrity
+#### Transaction History Integrity
 - All calculations are based on immutable blockchain history
 - Each balance period is precisely defined by transaction timestamps
 - No opportunity for manipulation through temporary balance changes
 
-### Attack Prevention
+#### Attack Prevention
 1. Wallet Splitting Protection
 - Base voting weight requires minimum qualifying balance (500 ADA)
 - Holding time multiplier only affects ADA-based voting power
@@ -349,7 +381,7 @@ def check_minimum_qualifying_balance(wallet_balance):
 - Exchange-controlled wallets are naturally limited by holding time factor
 - Encourages users to maintain personal custody
 
-## Technical Requirements
+### Technical Requirements
 This change requires a hard fork of the Cardano network due to:
 - Implementation of new on-chain data structures for voting weight calculation
 - Modification of governance mechanisms
