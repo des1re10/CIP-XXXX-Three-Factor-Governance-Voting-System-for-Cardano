@@ -112,7 +112,7 @@ The base voting weight component provides democratic basic participation rights 
    - Ensures committed participation in the ecosystem
 
 2. Accessibility Balance
-   - 500 ADA threshold (~$300 USD at current prices) remains accessible to individual participants
+   - 500 ADA threshold remains accessible to individual participants
    - Including delegated ADA allows stakers to participate without unstaking
    - 30-day holding period prevents short-term manipulation while allowing reasonable entry
 
