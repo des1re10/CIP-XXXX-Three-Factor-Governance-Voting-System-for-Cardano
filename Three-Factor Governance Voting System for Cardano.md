@@ -32,12 +32,12 @@ This proposal introduces a balanced governance approach combining three weighted
 The total voting power of a wallet is calculated using the following formula:
 
 ```
-Total Voting Power = Base Weight (30%) + [ADA Holdings Weight (45%) × Time Multiplier (25%)]
+Total Voting Power = Base Weight per Wallet (30%) + [ADA Holdings Weight (45%) × Time Multiplier (25%)]
 ```
 
 Each factor serves a specific purpose in the governance system:
 
-1. Base Weight (30%):
+1. Base Weight per Wallet (30%):
    - Provides equal basic voting rights to all qualifying wallets
    - Requires minimum balance of 500 ADA and 30-day holding period
    - Ensures broad community participation
@@ -62,7 +62,7 @@ This combination creates a balanced system where:
 The proposed weighting distribution (30% base, 45% ADA holdings, 25% holding time) represents an initial configuration designed to balance democratic participation with stake-based influence. However, these parameters can be adjusted through governance voting to better serve the community's needs:
 
 #### Adjustable Parameters
-- Base voting weight percentage (currently 30%)
+- Base weight per wallet percentage (currently 30%)
 - ADA holdings weight percentage (currently 45%)
 - Holding time weight percentage (currently 25%)
 - Logarithmic base for ADA calculation (currently 1M ADA)
@@ -86,7 +86,7 @@ The proposed weighting distribution (30% base, 45% ADA holdings, 25% holding tim
 
 ### Detailed Factor Descriptions
 
-#### 1. Base Voting Weight per Wallet (30%)
+#### 1. Base Weight per Wallet (30%)
 The base voting weight component provides democratic basic participation rights while implementing necessary safeguards against potential abuse:
 
 ##### Minimum Qualifying Requirements
