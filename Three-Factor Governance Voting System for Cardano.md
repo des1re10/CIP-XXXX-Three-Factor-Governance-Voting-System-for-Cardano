@@ -67,6 +67,7 @@ The proposed weighting distribution (30% base, 45% ADA holdings, 25% holding tim
 - Holding time weight percentage (currently 25%)
 - Logarithmic base for ADA calculation (currently 1M ADA)
 - Minimum qualifying balance (currently 500 ADA)
+- Maximum time multiplier cap (currently 2.0)
 - Time-related parameters (depending on chosen implementation):
   * For Fixed Period Option: Time period length (currently 2 years)
   * For Relative Time Option: Maximum multiplier cap (currently 2.0)
@@ -89,7 +90,7 @@ The proposed weighting distribution (30% base, 45% ADA holdings, 25% holding tim
 #### 1. Base Weight per Wallet (30%)
 The base voting weight component provides democratic basic participation rights while implementing necessary safeguards against potential abuse:
 
-##### Minimum Qualifying Requirements
+#### Minimum Qualifying Requirements
 1. Balance Threshold
    - Minimum balance: 500 ADA
    - Can include both liquid ADA and delegated ADA in stake pools
@@ -105,7 +106,7 @@ The base voting weight component provides democratic basic participation rights 
    Qualifying Balance = Liquid ADA + Delegated ADA (in stake pools)
    ```
 
-##### Rationale for Minimum Requirements
+#### Rationale for Minimum Requirements
 1. Security Considerations
    - Prevents sybil attacks through wallet splitting
    - Makes manipulation through multiple wallets economically unfeasible
@@ -126,7 +127,7 @@ The base voting weight component provides democratic basic participation rights 
    - Encourages long-term holding and stake delegation
    - Maintains broad participation while ensuring skin in the game
 
-##### Implementation Notes
+#### Implementation Notes
 - Balance checking occurs at vote registration and submission
 - Holding period calculated using transaction history
 - Stake delegation status verified through on-chain data
@@ -158,11 +159,166 @@ The holding time factor serves as a crucial component in preventing manipulation
 - New wallets retain basic participation rights while having reduced ADA-based influence
 - The system naturally resists short-term manipulation attempts while remaining fair to legitimate transfers
 
-The holding time is calculated using the complete transaction history of each wallet:
-- Each transaction timestamp marks the start/end of a balance period
-- The effective holding time is weighted by the actual balance held during each period
-- Only continuously held balances contribute to the holding time calculation
-- Transfers between wallets start fresh holding time calculations for the transferred amount
+The holding time is calculated directly from UTXO ages in the wallet:
+- Each UTXO's age is determined by its creation timestamp
+- The effective holding time is weighted by each UTXO's amount
+- Moving ADA between wallets creates new UTXOs, resetting their holding time
+- Smart contract interactions and exchange operations create new UTXOs
+
+The system provides two options for calculating the holding time factor:
+
+#### Option A: Fixed Time Period (2 Years)
+This option uses a fixed maximum time period approach:
+- Maximum holding period capped at 2 years
+- Linear scaling from minimum holding period to maximum
+- Each UTXO's holding time individually capped at 2 years
+- Simple and predictable growth in voting power
+- Formula:
+```
+time_multiplier = min(effective_days / (2 * 365), 2.0)
+```
+
+The fixed time period approach calculates effective holding time directly from UTXO ages up to a maximum of 2 years:
+
+```python
+def calculate_effective_holding_time(utxos):
+    """
+    Calculate effective holding time from UTXO ages with a fixed maximum period.
+    """
+    current_time = get_current_slot_time()
+    MAX_HOLDING_TIME = 365 * 2  # 2 years in days
+    
+    total_weighted_time = 0
+    total_balance = 0
+    
+    for utxo in utxos:
+        amount = utxo.amount
+        days_held = (current_time - utxo.creation_time).total_seconds() / (24 * 3600)
+        # Cap individual UTXO holding time at 2 years
+        capped_holding_time = min(days_held, MAX_HOLDING_TIME)
+        
+        total_weighted_time += amount * capped_holding_time
+        total_balance += amount
+        
+    return total_weighted_time / total_balance if total_balance > 0 else 0
+
+def calculate_time_multiplier_fixed(wallet_stats):
+    """
+    Calculate time multiplier using fixed period approach.
+    """
+    MIN_HOLDING_DAYS = 30
+    MAX_HOLDING_TIME = 365 * 2  # 2 years in days
+    MAX_MULTIPLIER = 2.0
+    
+    effective_days = wallet_stats['effective_holding_days']
+    
+    if effective_days < MIN_HOLDING_DAYS:
+        return 0.0
+    
+    # Linear scaling between 0 and MAX_HOLDING_TIME
+    relative_position = effective_days / MAX_HOLDING_TIME
+    return min(relative_position * 2.0, MAX_MULTIPLIER)
+```
+
+#### Option B: Relative Time Calculation
+This option uses network averages as a reference point:
+
+- Compares individual wallet holding time to network average
+- Dynamically adjusts based on network-wide holding patterns
+- Maintains 2.0 maximum multiplier cap
+- More adaptive to changing network conditions
+- Formula:
+```
+time_multiplier = min(effective_days / network_avg_days, 2.0)
+```
+
+The relative time approach compares a wallet's holding time to the network average, with a maximum cap of 2.0 (200%) on the time multiplier:
+
+```python
+def calculate_relative_holding_time(wallet):
+    tx_history = get_wallet_transactions(wallet)
+    current_time = get_current_slot_time()
+    
+    # Calculate wallet's weighted holding time
+    wallet_weighted_time = calculate_weighted_holding_time(tx_history, current_time)
+    
+    # Get network average holding time
+    network_avg_time = get_network_avg_holding_time()
+    
+    # Calculate relative position and cap at 200% (2.0)
+    relative_position = wallet_weighted_time / network_avg_time
+    return min(relative_position, 2.0)  # Maximum 200% multiplier
+```
+
+#### Time Multiplier Cap (200%) Explanation
+The time multiplier uses a maximum cap of 2.0 (200%) to ensure fair voting power distribution:
+
+```python
+def calculate_time_multiplier(wallet_stats):
+    MAX_MULTIPLIER = 2.0  # 200% maximum multiplier
+    NETWORK_AVG_HOLDING_TIME = get_network_avg_holding_time()
+    MIN_HOLDING_DAYS = 30  # 30 days minimum
+    
+    effective_days = wallet_stats['effective_holding_days']
+    
+    if effective_days < MIN_HOLDING_DAYS:
+        return 0.0
+    
+    # Calculate relative position to network average
+    relative_position = effective_days / NETWORK_AVG_HOLDING_TIME
+    
+    # Apply multiplier cap
+    return min(relative_position, MAX_MULTIPLIER)
+```
+
+Example calculations with 100-day network average:
+```
+Wallet A (single UTXO, 100 days old):
+- effective_days = 100
+- relative_position = 100/100 = 1.0 (100%)
+- time_multiplier = 1.0 (normal voting power)
+
+Wallet B (single UTXO, 200 days old):
+- effective_days = 200
+- relative_position = 200/100 = 2.0 (200%)
+- time_multiplier = 2.0 (maximum doubled power)
+
+Wallet C (multiple UTXOs):
+- UTXO1: 1000 ADA, 300 days old
+- UTXO2: 2000 ADA, 50 days old
+- effective_days = (1000*300 + 2000*50)/(1000 + 2000) = 133.33 days
+- relative_position = 133.33/100 = 1.33 (133%)
+- time_multiplier = 1.33
+
+Wallet D (new UTXOs):
+- All UTXOs less than 30 days old
+- time_multiplier = 0.0 (minimum holding period not met)
+```
+
+#### Rationale for Implementation Choice
+The proposal recommends implementing Option A (Fixed Time Period) initially due to:
+
+- Greater predictability for participants
+- Simpler implementation and verification
+- Lower computational overhead
+- Easier community understanding and adoption
+
+However, the system design allows for future migration to Option B through governance voting if the community determines that dynamic adjustment would better serve the ecosystem's needs.
+
+Both options maintain the core security properties:
+- UTXO-based timestamp verification
+- Reset on wallet transfers
+- Protection against manipulation through wallet splitting
+- Compatibility with smart contract interactions
+- Support for stake delegation
+
+Time Multiplier Cap of 200% was chosen because:
+1. It provides meaningful incentive for long-term holding
+2. Prevents excessive concentration of power in very old wallets
+3. Creates clear upper bounds on time-based voting power
+4. Maintains balanced influence across the network
+
+This cap value of 2.0 is an adjustable parameter that can be modified through governance voting based on community feedback and network dynamics.
 
 #### Rationale for Linear Time Scaling
 
@@ -195,222 +351,185 @@ Alternative approaches like logarithmic or exponential scaling were considered b
 
 This linear approach, combined with the 2.0 (200%) cap, creates an optimal balance between rewarding long-term commitment and maintaining system security.
 
-### Implementation Options for Holding Time Factor
-
-#### Option A: Fixed Time Period (2 years)
-The fixed time period approach uses transaction history to calculate an effective holding time up to a maximum of 2 years:
-
-```python
-def calculate_effective_holding_time(wallet):
-    tx_history = get_wallet_transactions(wallet)
-    current_time = get_current_slot_time()
-    
-    # Calculate weighted holding time from transaction history
-    weighted_time = calculate_weighted_holding_time(tx_history, current_time)
-    
-    # Cap at 2 years
-    max_holding_time = 365 * 2  # 2 years
-    return min(weighted_time, max_holding_time)
-```
-
-#### Option B: Relative Time Calculation
-The relative time approach compares a wallet's holding time to the network average, with a maximum cap of 2.0 (200%) on the time multiplier:
-
-```python
-def calculate_relative_holding_time(wallet):
-    tx_history = get_wallet_transactions(wallet)
-    current_time = get_current_slot_time()
-    
-    # Calculate wallet's weighted holding time
-    wallet_weighted_time = calculate_weighted_holding_time(tx_history, current_time)
-    
-    # Get network average holding time
-    network_avg_time = get_network_avg_holding_time()
-    
-    # Calculate relative position and cap at 200% (2.0)
-    relative_position = wallet_weighted_time / network_avg_time
-    return min(relative_position, 2.0)  # Maximum 200% multiplier
-```
-
-##### Time Multiplier Cap (200%) Explanation
-The time multiplier uses a maximum cap of 2.0 (200%) to ensure fair voting power distribution:
-
-1. Base Case (100%):
-   - A wallet held for the network average time receives a 1.0 multiplier (100%)
-   - Example: If network average is 100 days, a 100-day wallet gets 1.0
-
-2. Maximum Boost (200%):
-   - Long-term holders can earn up to a 2.0 multiplier (200%)
-   - This means their ADA-based voting power can at most double
-   - Any holding time beyond 2x the network average is capped
-
-3. Proportional Reduction:
-   - Newer wallets receive a proportionally reduced multiplier
-   - Example: A wallet held for half the network average gets 0.5 multiplier (50%)
-
-Example calculations with 100-day network average:
-```
-Wallet A (100 days = network average):
-- relative_position = 100/100 = 1.0 (100%)
-- time_multiplier = min(1.0, 2.0) = 1.0 (normal voting power)
-
-Wallet B (200 days = 2x average):
-- relative_position = 200/100 = 2.0 (200%)
-- time_multiplier = min(2.0, 2.0) = 2.0 (maximum doubled power)
-
-Wallet C (300 days = 3x average):
-- relative_position = 300/100 = 3.0 (300%)
-- time_multiplier = min(3.0, 2.0) = 2.0 (capped at maximum)
-
-Wallet D (50 days = 0.5x average):
-- relative_position = 50/100 = 0.5 (50%)
-- time_multiplier = min(0.5, 2.0) = 0.5 (reduced power)
-```
-
-This 200% cap was chosen because:
-1. It provides meaningful incentive for long-term holding
-2. Prevents excessive concentration of power in very old wallets
-3. Creates clear upper bounds on time-based voting power
-4. Maintains balanced influence across the network
-
-This cap value of 2.0 is an adjustable parameter that can be modified through governance voting based on community feedback and network dynamics.
-
 ### Technical Implementation
 
 #### Core Voting Power Calculation
 ```python
 def calculate_voting_power(wallet):
-    # Get wallet stats from transaction history
-    stats = calculate_wallet_stats(wallet)
+    """
+    Calculate total voting power for a wallet incorporating all three factors:
+    - Base voting weight (30%)
+    - ADA holdings weight (45%)
+    - Holding time multiplier (25%)
+    """
+    # Get current UTXOs and delegated ADA
+    wallet_stats = get_wallet_stats(wallet)
     
     # Only proceed if minimum balance requirement is met
-    if stats.current_balance < MIN_VOTING_BALANCE:
+    if not check_minimum_qualifying_balance(wallet_stats):
         return 0
         
     # Base voting weight (30%)
     base_power = 1.0 * 0.3
     
     # ADA weighting (45%) - logarithmic
-    ada_power = (math.log10(stats.current_balance + 1) / 
+    ada_power = (math.log10(wallet_stats['current_balance'] + 1) / 
                 math.log10(1000000)) * 0.45
     
-    # Holding time weighting (25%)
-    # Used as multiplication factor only for ADA-based voting power
-    time_multiplier = calculate_time_multiplier(stats.effective_holding_days)
+    # Calculate time multiplier
+    time_multiplier = calculate_time_multiplier(wallet_stats)
     
-    # Base power remains constant, time multiplier only affects ADA power
+    # Total power: base + (ada * time_multiplier)
     total_power = base_power + (ada_power * time_multiplier)
     
     return total_power
 
-def calculate_wallet_stats(wallet_address):
+def get_wallet_stats(wallet_address):
     """
-    Calculate wallet statistics using transaction history
+    Get wallet statistics using current UTXOs and delegation status.
     """
-    txs = get_wallet_transactions(wallet_address)
-    current_time = get_current_slot_time()
+    # Get current UTXOs in wallet
+    utxos = get_wallet_utxos(wallet_address)
     
-    # Sort transactions chronologically
-    txs.sort(key=lambda x: x.timestamp)
+    # Get delegation info
+    delegated_ada = get_delegated_ada(wallet_address)
     
-    balance_periods = []
-    current_balance = 0
-    last_timestamp = None
+    # Calculate total current balance
+    current_balance = sum(utxo.amount for utxo in utxos)
     
-    # Build list of balance periods from transactions
-    for tx in txs:
-        if last_timestamp is not None:
-            balance_periods.append({
-                'balance': current_balance,
-                'start_time': last_timestamp,
-                'end_time': tx.timestamp
-            })
-        
-        current_balance += tx.amount  # (negative for outgoing tx)
-        last_timestamp = tx.timestamp
-    
-    # Add final period up to current time
-    if last_timestamp is not None:
-        balance_periods.append({
-            'balance': current_balance,
-            'start_time': last_timestamp,
-            'end_time': current_time
-        })
-    
-    # Calculate weighted holding time
-    total_weighted_time = 0
-    total_weights = 0
-    
-    for period in balance_periods:
-        if period['balance'] <= 0:
-            continue
-            
-        period_length = (period['end_time'] - period['start_time']).total_seconds()
-        period_length_days = period_length / (24 * 3600)
-        
-        total_weighted_time += period['balance'] * period_length_days
-        total_weights += period['balance']
-    
-    if total_weights == 0:
-        return {
-            'effective_holding_days': 0,
-            'current_balance': 0
-        }
+    # Calculate effective holding time directly from UTXOs
+    effective_holding_days = calculate_effective_holding_time(utxos)
     
     return {
-        'effective_holding_days': total_weighted_time / total_weights,
-        'current_balance': current_balance
+        'current_balance': current_balance,
+        'delegated_ada': delegated_ada,
+        'effective_holding_days': effective_holding_days,
+        'utxos': utxos  # Keep UTXO reference for detailed analysis if needed
     }
 
-def check_minimum_qualifying_balance(wallet_balance):
+def calculate_effective_holding_time(utxos):
     """
-    Check if wallet meets minimum balance requirement for base voting weight.
+    Calculate effective holding time directly from UTXO ages.
+    Each UTXO's holding time is weighted by its amount.
+    """
+    current_time = get_current_slot_time()
     
-    Minimum Balance Requirements:
-    - Primary: 500 ADA minimum balance
-    - Additional: Must be held for at least 30 days
-    - Exception: Delegated ADA in stake pools counts towards minimum
+    total_weighted_time = 0
+    total_balance = 0
     
-    Returns:
-    - Boolean indicating if wallet qualifies for base voting weight
+    for utxo in utxos:
+        amount = utxo.amount
+        holding_time = (current_time - utxo.creation_time).total_seconds() / (24 * 3600)  # in days
+        
+        total_weighted_time += amount * holding_time
+        total_balance += amount
+        
+    return total_weighted_time / total_balance if total_balance > 0 else 0
+
+def check_minimum_qualifying_balance(wallet_stats):
+    """
+    Check if wallet meets minimum balance requirements for voting.
     """
     MIN_ADA_REQUIREMENT = 500  # 500 ADA minimum
     MIN_HOLDING_DAYS = 30      # 30 days minimum holding period
     
-    # Get effective balance including delegated ADA
-    total_effective_balance = wallet_balance.liquid_ada + wallet_balance.delegated_ada
+    # Calculate total effective balance
+    total_balance = wallet_stats['current_balance'] + wallet_stats['delegated_ada']
     
-    # Get holding duration
-    holding_duration = calculate_effective_holding_time(wallet_balance)
+    # Check balance requirement
+    if total_balance < MIN_ADA_REQUIREMENT:
+        return False
     
-    # Check both requirements
-    meets_balance = total_effective_balance >= MIN_ADA_REQUIREMENT
-    meets_duration = holding_duration >= MIN_HOLDING_DAYS
+    # Check holding period requirement
+    if wallet_stats['effective_holding_days'] < MIN_HOLDING_DAYS:
+        return False
     
-    return meets_balance and meets_duration
+    return True
+
+def calculate_time_multiplier(wallet_stats):
+    """
+    Calculate time multiplier based on effective holding days.
+    """
+    # Constants
+    MAX_MULTIPLIER = 2.0  # 200% maximum multiplier
+    NETWORK_AVG_HOLDING_TIME = get_network_avg_holding_time()
+    MIN_HOLDING_DAYS = 30  # 30 days minimum
+    
+    effective_days = wallet_stats['effective_holding_days']
+    
+    if effective_days < MIN_HOLDING_DAYS:
+        return 0.0
+    
+    # Calculate relative position to network average
+    relative_position = effective_days / NETWORK_AVG_HOLDING_TIME
+    
+    # Apply multiplier cap
+    return min(relative_position, MAX_MULTIPLIER)
+
+# Helper functions to be implemented based on Cardano node API
+def get_wallet_utxos(wallet_address):
+    """
+    Get current UTXOs for a wallet.
+    To be implemented using Cardano node API.
+    """
+    pass
+
+def get_delegated_ada(wallet_address):
+    """
+    Get amount of ADA delegated to stake pools by this wallet.
+    To be implemented using Cardano node API.
+    """
+    pass
+
+def get_current_slot_time():
+    """
+    Get current slot time from the Cardano network.
+    To be implemented using Cardano node API.
+    """
+    pass
+
+def get_network_avg_holding_time():
+    """
+    Get the network-wide average holding time.
+    To be implemented using Cardano node API.
+    """
+    pass
 ```
 
 ### Security Considerations
 
 #### Transaction History Integrity
-- All calculations are based on immutable blockchain history
-- Each balance period is precisely defined by transaction timestamps
-- No opportunity for manipulation through temporary balance changes
+- All calculations are based on immutable UTXO history
+- Holding time is precisely determined by UTXO creation timestamps
+- Each ADA amount's age is cryptographically verifiable through the UTXO model
+- Voting power calculation uses only current UTXOs, making manipulation impossible
+- Network consensus ensures timestamp integrity
 
 #### Attack Prevention
-1. Wallet Splitting Protection
-- Base voting weight requires minimum qualifying balance (500 ADA)
-- Holding time multiplier only affects ADA-based voting power
-- Even split wallets retain only base voting rights initially
-- Cost of attack exceeds potential benefits
 
-2. Flash Loan Protection
-- Effective holding time calculation ensures only long-term holdings count
-- Short-term balance spikes have minimal impact
+1. Wallet Splitting Protection
+   - Base voting weight requires minimum qualifying balance (500 ADA)
+   - Each UTXO's age is tracked independently
+   - Splitting wallets resets UTXO creation timestamps
+   - Cost of attack exceeds potential benefits due to transaction fees
+
+2. Balance Manipulation Protection
+   - New UTXOs automatically have their true (short) holding time
+   - Large deposits cannot artificially age or manipulate voting power
+   - Moving ADA between wallets creates new UTXOs with reset timestamps
+   - UTXO model prevents any artificial aging of funds
 
 3. Exchange Holdings
-- Exchange-controlled wallets are naturally limited by holding time factor
-- Encourages users to maintain personal custody
+   - Exchange hot wallet rotations create new UTXOs
+   - Each withdrawal creates new UTXOs with reset timestamps
+   - Natural incentive for users to maintain personal custody
+   - Batch operations don't preserve holding time
+
+4. Smart Contract Interaction
+   - Smart contract interactions create new UTXOs
+   - DeFi protocol usage resets holding time through UTXO creation
+   - Clear distinction between held and locked ADA through UTXO ownership
+   - Delegation status tracked separately from UTXO age
 
 ### Technical Requirements
 This change requires a hard fork of the Cardano network due to:
@@ -420,7 +539,6 @@ This change requires a hard fork of the Cardano network due to:
 
 ## Transition Plan
 1. Community Discussion (1 month)
-   - Discussion of advantages and disadvantages of both time calculation options
    - Collection of feedback on parameter choices
    - Fine-tuning of weightings
    - Determination of minimum qualifying balance
