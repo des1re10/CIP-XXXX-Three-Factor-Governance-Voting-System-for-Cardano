@@ -164,6 +164,37 @@ The holding time is calculated using the complete transaction history of each wa
 - Only continuously held balances contribute to the holding time calculation
 - Transfers between wallets start fresh holding time calculations for the transferred amount
 
+#### Rationale for Linear Time Scaling
+
+The linear time scaling approach was chosen over alternatives like logarithmic or exponential scaling for several important reasons:
+
+1. Uniform Time Cost
+   - Linear scaling ensures that all wallets, regardless of their ADA holdings, must wait the same proportional time to reach their maximum multiplier
+   - A wallet with 1,000 ADA and a wallet with 100,000 ADA both need to wait the same time period to double their voting power
+   - This creates a fair and predictable growth rate that treats all holders equally
+
+2. Manipulation Resistance
+   - Since the time multiplier affects the ADA holdings component, linear scaling provides better protection against manipulation
+   - Large holders cannot gain disproportionate voting power through rapid early time multiplier growth
+   - The consistent time cost makes wallet-splitting attacks equally expensive in terms of time for all holder sizes
+
+3. Predictability and Verification
+   - Linear growth is easier for the community to understand and verify
+   - The relationship between holding time and voting power multiplier is transparent
+   - Simpler calculations reduce the risk of implementation errors or unexpected behavior
+
+4. Fair Power Distribution
+   - The steady growth rate prevents excessive early advantage for any holder size
+   - New participants can clearly understand and plan for their voting power growth
+   - The system maintains balance between short-term and long-term holders
+
+Alternative approaches like logarithmic or exponential scaling were considered but rejected:
+- Logarithmic scaling would provide faster early growth, potentially enabling quicker manipulation by large holders
+- Exponential scaling would overly reward very long-term holders and create too strong a power concentration
+- Both alternatives would make the system more complex without providing clear benefits over linear scaling
+
+This linear approach, combined with the 2.0 (200%) cap, creates an optimal balance between rewarding long-term commitment and maintaining system security.
+
 ### Implementation Options for Holding Time Factor
 
 #### Option A: Fixed Time Period (2 years)
