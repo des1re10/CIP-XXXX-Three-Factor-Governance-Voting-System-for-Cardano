@@ -41,33 +41,33 @@ Each factor serves a specific purpose in the governance system:
    - Provides basic democratic voting rights for qualifying wallets
    - Requires minimum balance of 1000 ADA and 30-day holding period
    - Ensures broad community participation
-   - Set to 0 for wallets that inherit time multiplier through splitting
-   - Only available to organically grown holding time
+   - Proportionally distributed during wallet splits
+   - Total base weight remains constant after splitting
 
 2. ADA Holdings Weight (60%):
    - Uses logarithmic scaling to balance influence of large holders
    - Calculated as: log10(ada_amount + 1) / log10(10M)
    - Preserves stake-based voting while preventing dominance
-   - Applied equally to all wallet types
+   - Split wallets use original total for calculation
+   - Distributed proportionally among split wallets
 
 3. Time Multiplier (0.0x to 2.0x):
    - Multiplies the sum of Base Weight and ADA Holdings Weight
-   - Primary anti-splitting mechanism
+   - Rewards long-term holding
    - New wallets start with multiplier of 0.0x
    - Can be inherited through proven wallet splits
-   - When inherited, removes access to base weight
    - Tracked through UTXO history for verification
-   - Makes wallet splitting unprofitable through base weight removal
    - Linear growth up to 2.0x maximum over 2 years
 
 This combination creates a balanced system where:
-- Small holders maintain meaningful participation through fixed base weight
+- Small holders maintain meaningful participation through proportional base weight
 - Large holders retain influence but with diminishing returns
-- Splitting wallets forces a choice between:
-  * Starting fresh with 0 multiplier but keeping base weight
-  * Inheriting time multiplier but losing base weight
+- Splitting wallets maintains exact total voting power through:
+  * Proportional distribution of base weight
+  * Equal distribution of ADA weight based on original amount
+  * Inheritance of time multiplier
 - UTXO history enables verification while preventing gaming
-- System naturally encourages organic growth over artificial splitting
+- System naturally encourages organic growth while allowing legitimate splits
 
 ### Parameter Adjustability
 The proposed weighting distribution represents an initial configuration designed to balance democratic participation with stake-based influence. Parameters can be adjusted through governance voting to better serve the community's needs:
@@ -98,35 +98,41 @@ The proposed weighting distribution represents an initial configuration designed
 ### Detailed Factor Descriptions
 
 ### 1. Base Weight per Wallet (40%)
+The base weight component provides democratic participation rights that are proportionally distributed during wallet splits while preventing artificial wallet creation through UTXO history verification.
 
-The base weight component provides democratic participation rights for qualifying wallets while preventing artificial wallet creation through UTXO history verification.
-
-#### Base Weight Formula
+## Base Weight Formula
 ```
 Base_Weight(wallet) = 
     0.40 if (balance ≥ 1000 ADA) AND 
            (holding_period ≥ 30 days) AND 
-           (no_inherited_history)
+           (no_split_history)
+    0.40/N if (balance ≥ 1000 ADA) AND 
+            (holding_period ≥ 30 days) AND 
+            (split_wallet) 
+            where N = number of splits
     0.00 otherwise
 ```
 
-#### Core Requirements and Rules
+## Core Requirements and Rules
 - Minimum balance: 1000 ADA (includes both liquid and delegated ADA)
 - Minimum holding period: 30 days
 - Balance must be maintained throughout voting period
 - New wallets receive 40% base weight if requirements are met
-- Wallets with inherited UTXO history (splits) receive 0% base weight
+- Split wallets receive proportional share (40%/N) of base weight
+- Total base weight remains constant after splitting
 
-#### UTXO History Handling
-- New wallets: Start with base weight, must build time multiplier from 0
-- Split wallets: Can inherit parent's time multiplier but lose base weight
+## UTXO History Handling
+- New wallets: Start with full base weight, must build time multiplier from 0
+- Split wallets: Inherit parent's time multiplier and receive proportional base weight
 - Regular transfers: Create new UTXOs, reset time multiplier to 0
+- Chain of splits: Base weight divided by total number of resulting wallets
 
-#### Security Features
+## Security Features
 - UTXO history provides cryptographic proof of wallet lineage
 - Transaction history prevents manipulation through artificial aging
-- Clear distinction between organic growth and wallet splits
-- System naturally encourages long-term participation
+- Split detection through UTXO chain analysis ensures accurate weight distribution
+- System maintains equal total voting power while preserving democratic participation
+- Split wallets must prove origin through UTXO history to receive proportional weight
 
 ### 2. ADA Holdings Weighting (60%)
 - Logarithmic instead of linear scaling
@@ -153,13 +159,13 @@ The base can be adjusted through governance voting when:
 - The community desires an adjustment to the weighting curve
 
 ### 3. Holding Time Multiplier
-The time multiplier serves as the primary mechanism preventing wallet splitting while allowing legitimate operations. It multiplies the ADA holdings component of the voting power formula while enforcing specific rules for wallet creation and splitting:
+The time multiplier serves as the primary mechanism preventing wallet splitting while allowing legitimate operations. It multiplies the base weight per wallet and ADA holdings component of the voting power formula:
 
 Key characteristics:
 - New wallets start with a time multiplier of 0
 - Time multiplier can be inherited during wallet splits if UTXO lineage is proven
-- Split wallets inheriting time multiplier have base weight set to 0
-- Makes wallet splitting mathematically unprofitable
+- Split wallets receive proportional base weight and inherit time multiplier
+- Maintains equal total voting power across splits
 
 Core operational rules:
 1. New Wallets
@@ -169,7 +175,7 @@ Core operational rules:
 
 2. Wallet Splits
    - Can inherit parent wallet's time multiplier if UTXO lineage is proven
-   - Base weight automatically set to 0 when inheriting time multiplier
+   - Base weight and ADA weight proportionally distributed
    - Only applies to transferred amounts
    - New incoming funds start at 0 multiplier
 
@@ -366,28 +372,29 @@ This linear approach, combined with the 2.0 (200%) cap, creates an optimal balan
 
 ### Mathematical Proof of System Properties
 
-#### Proof of Wallet Splitting Ineffectiveness
+#### Proof of Vote Power Conservation
 
-This section mathematically proves that wallet splitting always results in reduced voting power, making it an ineffective strategy for gaining additional influence.
+This section mathematically proves that wallet splitting maintains equal total voting power, ensuring fair representation regardless of wallet structure.
 
 ##### Theorem
-For any wallet W containing X ADA with time multiplier T, splitting into N wallets results in strictly less voting power than the original wallet.
+For any wallet W containing X ADA with time multiplier T, splitting into N wallets results in exactly equal total voting power as the original wallet.
 
 The voting system consists of three core components that determine total voting power:
 
 1. **Base Weight per Wallet (40%)**
-   - Available only to organically grown wallets
-   - Set to 0 for wallets with inherited UTXO history
+   - Proportionally distributed among split wallets
+   - Each split wallet receives BASE_WEIGHT / N
    - Provides democratic participation rights
 
 2. **ADA Holdings Weight (60%)**
-   - Applied to all wallets based on logarithmic formula
+   - Calculated based on original total amount
+   - Distributed equally among split wallets
    - Ensures proportional stake representation
    - Reduces extreme concentration of power
 
 3. **Holding Time Multiplier (0.0x to 2.0x)**
    - New wallets start at 0.0x, must build up naturally
-   - Split wallets can inherit if UTXO history is proven
+   - Split wallets inherit parent's time multiplier
    - Linear growth capped at 2.0x after 2 years
 
 ### Core Formula
@@ -400,10 +407,14 @@ P(W) = (B(W) + A(W)) × T(W)
 where:
 B(W) = Base Weight = 
     0.40 if no inherited UTXO history (new/organic wallet)
-    0    if inherited UTXO history (split wallet)
+    0.40/N if split wallet (N = number of splits)
 
 A(W) = ADA Weight = 
-    [log10(ada + 1) / log10(10^7)] × 0.60
+    For original wallet:
+        [log10(X + 1) / log10(10^7)] × 0.60
+    For split wallet:
+        [log10(original_X + 1) / log10(10^7)] × 0.60 / N
+        where original_X is the pre-split total amount
 
 T(W) = Time Multiplier =
     0    if new wallet without UTXO history
@@ -431,9 +442,9 @@ As a wallet ages naturally:
 #### 3. Wallet Splitting with UTXO History
 When splitting a wallet with proven UTXO history:
 ```
-- Base Weight: Drops to 0 for split wallets
+- Base Weight: 0.40/N per wallet (N = number of splits)
 - Time Multiplier: Inherited from parent wallet
-- ADA Weight: Recalculated based on new balances
+- ADA Weight: Original amount's weight divided by N
 ```
 
 ### Mathematical Properties
@@ -449,7 +460,7 @@ where t = holding time in days
 The ADA weight component scales logarithmically:
 ```
 A(X) = [log10(X + 1) / log10(10^7)] × 0.60
-where X = ADA amount
+where X = original total ADA amount
 ```
 
 #### 3. Split Behavior
@@ -459,30 +470,27 @@ Original Power:
 P(W) = (0.40 + [log10(X + 1)/log10(10^7) × 0.60]) × T
 
 Split Total Power:
-P_split(W,N) = N × (0 + [log10(X/N + 1)/log10(10^7) × 0.60]) × T
+P_split(W,N) = N × ((0.40/N + [log10(X + 1)/log10(10^7) × 0.60/N)) × T
 ```
 
-#### Proof of Split Disadvantage
-To prove that splitting always reduces voting power, we need to show that P(W) > P_split(W,N) for all N > 1:
+#### Proof of Power Conservation
+To prove that splitting maintains equal voting power, we show that P(W) = P_split(W,N) for all N ≥ 1:
 
 ```
-P(W) > P_split(W,N)
+P(W) = P_split(W,N)
 
-(0.40 + [log10(X + 1)/log10(10^7) × 0.60]) × T > 
-N × (0 + [log10(X/N + 1)/log10(10^7) × 0.60]) × T
+(0.40 + [log10(X + 1)/log10(10^7) × 0.60]) × T = 
+N × ((0.40/N + [log10(X + 1)/log10(10^7) × 0.60/N)) × T
 
 Dividing both sides by T (since T > 0):
 
-0.40 + [log10(X + 1)/log10(10^7) × 0.60] > 
-N × [log10(X/N + 1)/log10(10^7) × 0.60]
+0.40 + [log10(X + 1)/log10(10^7) × 0.60] = 
+N × (0.40/N + [log10(X + 1)/log10(10^7) × 0.60/N)
 
-0.40 + 0.60 × log10(X + 1)/log10(10^7) > 
-0.60 × N × log10(X/N + 1)/log10(10^7)
+0.40 + 0.60 × log10(X + 1)/log10(10^7) = 
+0.40 + 0.60 × log10(X + 1)/log10(10^7)
 
-This inequality holds because:
-1. The left side includes the base weight (0.40)
-2. For the logarithmic terms: log10(X + 1) > N × log10(X/N + 1) 
-   for all N > 1 due to logarithm properties
+This equality holds for all N ≥ 1, proving power conservation.
 ```
 
 ### Numerical Examples
@@ -498,11 +506,12 @@ Total = (0.40 + 0.432) × 1.5 = 1.248
 
 2. Split into Two 50,000 ADA Wallets:
 ```
-Base = 0 (inherited history)
-ADA per wallet = log10(50,000 + 1)/log10(10^7) × 0.60 = 0.391
-Total for both = 2 × (0 + 0.391) × 1.5 = 1.173
+Base per wallet = 0.40/2 = 0.20
+ADA per wallet = log10(100,000 + 1)/log10(10^7) × 0.60/2 = 0.216
+Total per wallet = (0.20 + 0.216) × 1.5 = 0.624
+Total for both = 2 × 0.624 = 1.248
 
-Net difference = 1.248 - 1.173 = 0.075 (in favor of keeping wallet whole)
+Net difference = 1.248 - 1.248 = 0 (exactly equal)
 ```
 
 #### Example 2: New Wallet Growth (100,000 ADA)
@@ -527,13 +536,13 @@ Power = (0.40 + 0.432) × 2.0 = 1.664
 
 2. **Growth Incentives**
    - New wallets must build time multiplier naturally
-   - Base weight encourages organic wallet growth
+   - Base weight distribution maintains democratic rights
    - Clear path to maximum voting power through holding
 
 3. **Split Behavior**
    - Splits with proven history preserve time multiplier
-   - Base weight removal balances inherited time value
-   - Total voting power remains proportional to stake
+   - Base weight and ADA weight distributed proportionally
+   - Total voting power remains exactly equal after splitting
 
 ### Parameter Adjustability
 
@@ -541,7 +550,7 @@ The system parameters can be modified through governance:
 
 1. **Base Weight per Wallet** (currently 0.40)
    - Range: [0.35, 0.45]
-   - Adjusts importance of organic growth
+   - Adjusts importance of democratic participation
 
 2. **ADA Weight** (currently 0.60)
    - Range: [0.55, 0.65]
@@ -553,7 +562,7 @@ The system parameters can be modified through governance:
 
 4. **Logarithmic Base** (currently 10^7)
    - Range: [10^6, 10^8]
-   - Adjusts curve steepness for splitting prevention
+   - Adjusts curve steepness
    - Higher values create stronger diminishing returns
 
 ### Conclusions
@@ -561,9 +570,9 @@ The system parameters can be modified through governance:
 The system provides:
 1. Verifiable UTXO-based history inheritance
 2. Natural incentives for long-term holding
-3. Fair balance between new and split wallets
-4. Democratic participation through base weight
-5. Mathematically proven split disadvantage
+3. Perfect power conservation under splitting
+4. Democratic participation through proportional base weight
+5. Mathematically proven power conservation
 6. Robust and predictable governance system
 
 All properties emerge from the fundamental structure of the formula and are mathematically proven to hold across all valid input ranges.
@@ -595,12 +604,20 @@ def calculate_voting_power(wallet, is_split=False):
     
     if total_balance < MIN_ADA:
         return 0
-        
-    # Base weight is 0 for split wallets
-    base_power = 0 if is_split else BASE_WEIGHT
     
-    # ADA weighting (logarithmic)
-    ada_power = (math.log10(total_balance + 1) / math.log10(10**7)) * ADA_WEIGHT
+    # Get split information
+    source_wallet = verify_split_source(wallet) if is_split else None
+    num_splits = get_number_of_splits(source_wallet) if source_wallet else 1
+        
+    # Base weight is proportionally distributed for split wallets
+    base_power = BASE_WEIGHT / num_splits if is_split else BASE_WEIGHT
+    
+    # For split wallets, calculate ADA weight based on original total
+    if is_split:
+        original_balance = get_original_wallet_balance(source_wallet)
+        ada_power = (math.log10(original_balance + 1) / math.log10(10**7)) * ADA_WEIGHT / num_splits
+    else:
+        ada_power = (math.log10(total_balance + 1) / math.log10(10**7)) * ADA_WEIGHT
     
     # Time multiplier inheritance for splits
     time_multiplier = inherit_time_multiplier(wallet) if is_split else calculate_time_multiplier(wallet_stats)
@@ -672,7 +689,9 @@ def calculate_effective_holding_time(utxos):
     
     for utxo in utxos:
         amount = utxo.amount
-        holding_time = (current_time - utxo.creation_time).total_seconds() / (24 * 3600)  # in days
+        # For split UTXOs, use original creation time
+        creation_time = get_original_utxo_time(utxo) if is_split_utxo(utxo) else utxo.creation_time
+        holding_time = (current_time - creation_time).total_seconds() / (24 * 3600)  # in days
         
         total_weighted_time += amount * holding_time
         total_balance += amount
@@ -723,6 +742,22 @@ def get_source_time_multiplier(wallet):
 def verify_split_source(wallet):
     """Verify if wallet is result of a legitimate split."""
     pass
+
+def get_number_of_splits(source_wallet):
+    """Get the number of split wallets from the original source."""
+    pass
+
+def get_original_wallet_balance(source_wallet):
+    """Get the original balance before the split occurred."""
+    pass
+
+def get_original_utxo_time(utxo):
+    """Get the creation time of the original UTXO before split."""
+    pass
+
+def is_split_utxo(utxo):
+    """Check if a UTXO resulted from a split transaction."""
+    pass
 ```
 
 ### Security Considerations
@@ -737,8 +772,8 @@ def verify_split_source(wallet):
 #### Attack Prevention
 
 1. UTXO-Based Security Model
-   - Time multiplier inheritance mechanics prevent profitable splitting:
-      * Split wallets must either inherit parent's time multiplier (losing 40% base weight) or start fresh
+   - Time multiplier inheritance maintains voting power conservation:
+      * Split wallets receive proportional base weight and ADA weight
       * Inheriting time multiplier requires cryptographic proof of wallet lineage
       * New incoming funds always start with 0 time multiplier
    - UTXO history provides immutable proof of holding time:
