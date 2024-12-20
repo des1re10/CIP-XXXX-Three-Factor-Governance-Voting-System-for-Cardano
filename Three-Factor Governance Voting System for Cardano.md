@@ -792,29 +792,5 @@ def is_split_utxo(utxo):
       * Delegation status tracked separately from holding time
       * Locked ADA in smart contracts maintains clear lineage
 
-### Technical Requirements
-This change requires a hard fork of the Cardano network due to:
-- Implementation of new on-chain data structures for voting weight calculation
-- Modification of governance mechanisms
-- Change of consensus rules for voting validation
-
-## Transition Plan
-1. Community Discussion (1 month)
-   - Collection of feedback on parameter choices
-   - Fine-tuning of weightings
-   - Determination of minimum qualifying balance
-
-2. Test Phase on Testnet (2 months)
-   - Implementation of transaction history analysis
-   - Collection of empirical data
-   - Stress tests and security analyses
-   - Performance optimization of calculations
-
-3. Implementation with Next Hard Fork
-   - Integration of community-chosen option
-   - Coordinated network update
-   - Begin tracking new voting weights
-   - Historical transaction data already available for holding time calculation
-
 ## Copyright
 This CIP is licensed under CC-BY-4.0.
