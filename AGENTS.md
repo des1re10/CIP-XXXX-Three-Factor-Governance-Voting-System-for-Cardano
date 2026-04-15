@@ -29,6 +29,11 @@
 - Why it is required
 - Evidence/example that triggers it
 - What breaks if removed
+## Audit Gate Workflow (Mandatory)
+- Before any substantial implementation or review, run `python3 /mnt/d/workspace/VisualStudio/Libraries/Scripts/audit_gate.py --changed` from the active repo (or `python ...` on Windows).
+- If you already know the touched files, run `python3 /mnt/d/workspace/VisualStudio/Libraries/Scripts/audit_gate.py <path1> <path2> ...` instead.
+- Use the returned prompt list as the minimum required audit set for the current change scope.
+- In every substantial implementation/review response, explicitly list the audit prompt files you applied.
 ## CRITICAL: Audit Prompt Compliance (Mandatory)
 - Load the canonical index first: `/mnt/d/workspace/VisualStudio/Libraries/Scripts/audit_prompts/README.md`.
 - Use the full prompt set directory as source of truth: `/mnt/d/workspace/VisualStudio/Libraries/Scripts/audit_prompts/`.
