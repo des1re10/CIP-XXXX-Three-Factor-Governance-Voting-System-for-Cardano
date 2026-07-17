@@ -52,7 +52,7 @@
 - Frontend/UI work: `14_frontend_visuals_and_mobile_standards.md`, `16_language_quality_no_ai_tone.md`.
 - Docs/Marketing/Legal text: `13_documentation_audit.md`, `15_marketing_claims_and_conversion_audit.md`, `27_legal_compliance_audit.md`, `28_prompt_scope_cleanup.md`.
 - Payments/Email workflows: `23_payment_integration_audit.md`, `24_email_services_audit.md`.
-- Additional domain prompts when touched: `01_code_redundancies.md`, `08_enum_signal_patterns.md`, `09_dead_code_detection.md`, `10_complexity_analysis.md`, `11_naming_and_comment_standards.md`.
+- Additional domain prompts when touched: `01_code_redundancies.md`, `08_enum_signal_patterns.md`, `09_codebase_cleanup.md`, `10_complexity_analysis.md`, `11_naming_and_comment_standards.md`.
 
 ### Mandatory Execution Rule
 - In every substantial implementation/review response, explicitly list the audit prompt files applied.
