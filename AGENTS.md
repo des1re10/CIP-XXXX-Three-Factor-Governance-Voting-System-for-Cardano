@@ -47,7 +47,7 @@
 - `26_techstack_consistency.md`.
 
 ### Change-Type Audits (Apply When Relevant)
-- Backend Python/FastAPI/Tkinter: `04_interface_validation.md`, `07_async_patterns.md`, `12_testing_standards.md`, `17_redis_backup_audit.md`, `18_redis_storage_consistency.md`, `20_url_endpoint_audit.md`, `25_shutdown_reason_tracking.md`.
+- Backend Python/FastAPI/Tkinter: `04_interface_validation.md`, `07_async_patterns.md`, `12_testing_standards.md`, `17_backup_audit.md`, `18_redis_storage_consistency.md`, `20_url_endpoint_audit.md`, `25_shutdown_reason_tracking.md`.
 - Bash/Deployment/Startup scripts: `21_bash_script_consistency.md`, `22_deployment_script_consistency.md`.
 - Frontend/UI work: `14_frontend_visuals_and_mobile_standards.md`, `16_language_quality_no_ai_tone.md`.
 - Docs/Marketing/Legal text: `13_documentation_audit.md`, `15_marketing_claims_and_conversion_audit.md`, `27_legal_compliance_audit.md`, `28_prompt_scope_cleanup.md`.
@@ -57,3 +57,7 @@
 ### Mandatory Execution Rule
 - In every substantial implementation/review response, explicitly list the audit prompt files applied.
 - If a prompt is not applicable, state why it is out of scope.
+
+## Coordination between active AI sessions
+
+- For simultaneous AI sessions, read [Agent coordination](../Agents/AgentCoordination.md). Join the shared live mailbox, announce scope, check messages during active work, and acknowledge ownership changes before mutations. This link intentionally targets the workspace protocol owned by Agents.
